@@ -5,4 +5,4 @@ from shopping_list.models import ShoppingItem
 
 @admin.register(ShoppingItem)
 class ShoppingItemAdmin(admin.ModelAdmin):
-    pass
+    list_display = ["name", "purchased"]
