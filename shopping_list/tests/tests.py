@@ -10,11 +10,13 @@ from shopping_list.models import ShoppingList, ShoppingItem
 @pytest.mark.django_db
 class TestShoppingList:
 
-    def test_valid_shopping_list_created_returns_201(self):
+    def test_valid_shopping_list_created_returns_201(
+        self, create_user, create_authenticated_client
+    ):
 
         url = reverse("all-shopping-lists")
         data = {"name": "abc"}
-        client = APIClient()
+        client = create_authenticated_client(create_user())
         response = client.post(url, data=data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
