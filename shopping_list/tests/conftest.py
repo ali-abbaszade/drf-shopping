@@ -28,11 +28,22 @@ def create_authenticated_client():
 
 @pytest.fixture(scope="session")
 def create_shopping_item():
-    def _create_shopping_item(name):
+    def _create_shopping_item(name, user):
         shopping_list = ShoppingList.objects.create(name="my list")
+        shopping_list.members.add(user)
         shopping_item = ShoppingItem.objects.create(
             name=name, purchased=True, shopping_list_id=shopping_list.id
         )
         return shopping_item
 
     return _create_shopping_item
+
+
+@pytest.fixture
+def create_shopping_list():
+    def _create_shopping_list(name, user):
+        shopping_list = ShoppingList.objects.create(name=name)
+        shopping_list.members.add(user)
+        return shopping_list
+
+    return _create_shopping_list
