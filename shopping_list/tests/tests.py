@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -38,15 +39,20 @@ class TestShoppingList:
         self, create_user, create_authenticated_client, create_shopping_list
     ):
         user = create_user()
-        create_shopping_list(name="a", user=user)
-        create_shopping_list(name="b", user=user)
+        client = create_authenticated_client(user)
+        create_shopping_list(name="abc", user=user)
+
+        another_user = User.objects.create_user(
+            "another", "another@user.com", "something"
+        )
+        create_shopping_list(name="xyz", user=another_user)
 
         url = reverse("all-shopping-lists")
-        client = create_authenticated_client(user)
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert ShoppingList.objects.count() == 2
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == "abc"
 
     def test_retrieve_single_shopping_list_returns_200(
         self, create_user, create_authenticated_client, create_shopping_list
@@ -146,6 +152,70 @@ class TestShoppingList:
         data = {"something_else": "xyz"}
         client = create_authenticated_client(user)
         response = client.patch(url, data=data, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_update_shopping_list_non_member_restricted_returns_403(
+        self, create_shopping_list, create_user, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_list = create_shopping_list(name="a", user=creator_user)
+        another_user = User.objects.create_user(
+            "another_user", "another@user.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse("shopping-list-detail", args=[shopping_list.pk])
+        data = {
+            "name": "xyz",
+        }
+
+        response = client.put(url, data=data, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_partial_update_shopping_list_non_member_restricted_returns_403(
+        self, create_shopping_list, create_user, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_list = create_shopping_list(name="a", user=creator_user)
+        another_user = User.objects.create_user(
+            "another_user", "another@user.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse("shopping-list-detail", args=[shopping_list.pk])
+        data = {
+            "name": "xyz",
+        }
+
+        response = client.patch(url, data=data, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_delete_shopping_list_non_member_restricted_returns_403(
+        self, create_shopping_list, create_user, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_list = create_shopping_list(name="a", user=creator_user)
+        another_user = User.objects.create_user(
+            "another", "another@email.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse("shopping-list-detail", args=[shopping_list.pk])
+        response = client.delete(url, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_user_should_retrieve_shopping_list_returns_200(
+        self, create_shopping_list, create_user, admin_client
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list(name="a", user=user)
+
+        url = reverse("shopping-list-detail", args=[shopping_list.pk])
+        response = admin_client.get(url, format="json")
 
         assert response.status_code == status.HTTP_200_OK
 
@@ -260,3 +330,131 @@ class TestShoppingItem:
         response = client.delete(url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_non_member_of_list_should_not_add_shopping_item_returns_403(
+        self, create_user, create_shopping_list, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_list = create_shopping_list(name="abc", user=creator_user)
+
+        another_user = User.objects.create_user(
+            "another", "another@email.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse("add-shopping-item", args=[shopping_list.pk])
+        data = {
+            "name": "new item",
+            "purchased": False,
+        }
+        response = client.post(url, data=data, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_user_can_add_shopping_item_returns_201(
+        self, create_shopping_list, create_user, admin_client
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list(user=user, name="a")
+
+        url = reverse("add-shopping-item", args=[shopping_list.pk])
+        data = {
+            "name": "new item",
+            "purchased": False,
+        }
+        response = admin_client.post(url, data=data, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_shopping_item_detail_access_restricted_for_non_member_returns_403(
+        self, create_shopping_item, create_user, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_item = create_shopping_item(user=creator_user, name="abc")
+        another_user = User.objects.create_user(
+            "another", "another@user.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse(
+            "shopping-item-detail",
+            kwargs={"pk": shopping_item.shopping_list.pk, "item_pk": shopping_item.pk},
+        )
+        response = client.get(url, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_shopping_item_detail_update_restricted_for_non_member_returns_403(
+        self, create_shopping_item, create_user, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_item = create_shopping_item(user=creator_user, name="abc")
+        another_user = User.objects.create_user(
+            "another", "another@user.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse(
+            "shopping-item-detail",
+            kwargs={"pk": shopping_item.shopping_list.pk, "item_pk": shopping_item.pk},
+        )
+        data = {
+            "name": "new name",
+            "purchased": False,
+        }
+        response = client.put(url, data=data, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_shopping_item_detail_partial_update_restricted_for_non_member_returns_403(
+        self, create_shopping_item, create_user, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_item = create_shopping_item(user=creator_user, name="abc")
+        another_user = User.objects.create_user(
+            "another", "another@user.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse(
+            "shopping-item-detail",
+            kwargs={"pk": shopping_item.shopping_list.pk, "item_pk": shopping_item.pk},
+        )
+        data = {
+            "purchased": True,
+        }
+        response = client.patch(url, data=data, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_shopping_item_delete_restricted_for_non_member_return_403(
+        self, create_user, create_shopping_item, create_authenticated_client
+    ):
+        creator_user = create_user()
+        shopping_item = create_shopping_item(name="abc", user=creator_user)
+        another_user = User.objects.create_user(
+            "another", "another@user.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+
+        url = reverse(
+            "shopping-item-detail",
+            kwargs={"pk": shopping_item.shopping_list.pk, "item_pk": shopping_item.pk},
+        )
+        response = client.delete(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_user_should_retrieve_single_shopping_item_returns_200(
+        self, create_user, create_shopping_item, admin_client
+    ):
+        user = create_user()
+        shopping_item = create_shopping_item(name="xyz", user=user)
+
+        url = reverse(
+            "shopping-item-detail",
+            kwargs={"pk": shopping_item.shopping_list.pk, "item_pk": shopping_item.pk},
+        )
+        response = admin_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
