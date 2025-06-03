@@ -26,9 +26,15 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ShoppingListSerializer(serializers.ModelSerializer):
-    shopping_items = ShoppingItemSerializer(many=True, read_only=True)
     members = UserSerializer(many=True, read_only=True)
+    unpurchased_items = serializers.SerializerMethodField()
 
     class Meta:
         model = ShoppingList
-        fields = ("id", "name", "shopping_items", "members")
+        fields = ("id", "name", "unpurchased_items", "members")
+
+    def get_unpurchased_items(self, obj):
+        return [
+            {"name": shopping_item.name}
+            for shopping_item in obj.shopping_items.filter(purchased=False)[:3]
+        ]

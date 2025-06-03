@@ -84,9 +84,10 @@ class TestShoppingList:
         client = create_authenticated_client(user)
         response = client.get(url)
 
+        print(response.data)
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["shopping_items"]) == 1
-        assert response.data["shopping_items"][0]["name"] == "a"
+        assert len(response.data["unpurchased_items"]) == 1
+        assert response.data["unpurchased_items"][0]["name"] == "a"
 
     def test_delete_shopping_list_returns_204(
         self, create_user, create_authenticated_client, create_shopping_list
@@ -217,6 +218,55 @@ class TestShoppingList:
         response = admin_client.get(url, format="json")
 
         assert response.status_code == status.HTTP_200_OK
+
+    def test_max_3_shopping_item_on_shopping_list_returns_200(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list("abc", user)
+
+        ShoppingItem.objects.create(
+            name="item-1", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="item-2", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="item-3", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="item-4", purchased=False, shopping_list=shopping_list
+        )
+
+        client = create_authenticated_client(user)
+        url = reverse("shopping-list-detail", args=[shopping_list.pk])
+        response = client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["unpurchased_items"]) == 3
+
+    def test_all_shopping_items_on_shopping_list_unpurchased_returns_200(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list("abc", user)
+
+        ShoppingItem.objects.create(
+            name="a", shopping_list=shopping_list, purchased=False
+        )
+        ShoppingItem.objects.create(
+            name="b", shopping_list=shopping_list, purchased=False
+        )
+        ShoppingItem.objects.create(
+            name="c", shopping_list=shopping_list, purchased=True
+        )
+
+        client = create_authenticated_client(user)
+        url = reverse("shopping-list-detail", args=[shopping_list.pk])
+        response = client.get(url)
+
+        response.status_code == status.HTTP_200_OK
+        assert len(response.data["unpurchased_items"]) == 2
 
 
 @pytest.mark.django_db
