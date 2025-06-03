@@ -18,8 +18,8 @@ urlpatterns = [
     ),
     path(
         "api/shopping-lists/<uuid:pk>/shopping-items/",
-        views.AddShoppingItem.as_view(),
-        name="add-shopping-item",
+        views.ListAddShoppingItem.as_view(),
+        name="list-add-shopping-item",
     ),
     path(
         "api/shopping-lists/<uuid:pk>/shopping-items/<uuid:item_pk>/",

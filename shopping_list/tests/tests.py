@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient
 
 import pytest
 
@@ -228,7 +227,7 @@ class TestShoppingItem:
         user = create_user()
         shopping_list = create_shopping_list(name="a", user=user)
 
-        url = reverse("add-shopping-item", args=[shopping_list.pk])
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk])
         data = {"name": "a", "purchased": False}
         client = create_authenticated_client(user)
         response = client.post(url, data=data, format="json")
@@ -242,7 +241,7 @@ class TestShoppingItem:
         user = create_user()
         shopping_list = create_shopping_list(name="a", user=user)
 
-        url = reverse("add-shopping-item", args=[shopping_list.pk])
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk])
         data = {"invalid data": "invalid data"}
         client = create_authenticated_client(user)
         response = client.post(url, data=data, format="json")
@@ -342,7 +341,7 @@ class TestShoppingItem:
         )
         client = create_authenticated_client(another_user)
 
-        url = reverse("add-shopping-item", args=[shopping_list.pk])
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk])
         data = {
             "name": "new item",
             "purchased": False,
@@ -357,7 +356,7 @@ class TestShoppingItem:
         user = create_user()
         shopping_list = create_shopping_list(user=user, name="a")
 
-        url = reverse("add-shopping-item", args=[shopping_list.pk])
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk])
         data = {
             "name": "new item",
             "purchased": False,
@@ -458,3 +457,61 @@ class TestShoppingItem:
         response = admin_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
+
+    def test_list_shopping_item_retrieved_by_shopping_list_member_returns_200(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list(name="abc", user=user)
+        shopping_item_1 = ShoppingItem.objects.create(
+            name="a", purchased=False, shopping_list=shopping_list
+        )
+        shopping_item_2 = ShoppingItem.objects.create(
+            name="b", purchased=False, shopping_list=shopping_list
+        )
+
+        client = create_authenticated_client(user)
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk])
+        response = client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 2
+        assert response.data[0]["name"] == shopping_item_1.name
+        assert response.data[1]["name"] == shopping_item_2.name
+
+    def test_non_member_can_not_access_shopping_item_returns_403(
+        self, create_user, create_authenticated_client, create_shopping_item
+    ):
+        creator_user = create_user()
+        shopping_item = create_shopping_item(name="abc", user=creator_user)
+
+        another_user = User.objects.create_user(
+            "another", "another@user.com", "something"
+        )
+        client = create_authenticated_client(another_user)
+        url = reverse("list-add-shopping-item", args=[shopping_item.shopping_list.pk])
+        response = client.get(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_return_shopping_item_the_ones_belonging_to_particular_list_return_200(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list("abc", user)
+        shopping_item_form_this_list = ShoppingItem.objects.create(
+            name="a", purchased=False, shopping_list=shopping_list
+        )
+
+        another_shopping_list = create_shopping_list("another list", user)
+        ShoppingItem.objects.create(
+            name="b", purchased=False, shopping_list=another_shopping_list
+        )
+
+        client = create_authenticated_client(user)
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk])
+        response = client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == shopping_item_form_this_list.name
