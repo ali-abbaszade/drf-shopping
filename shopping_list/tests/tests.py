@@ -84,7 +84,6 @@ class TestShoppingList:
         client = create_authenticated_client(user)
         response = client.get(url)
 
-        print(response.data)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["unpurchased_items"]) == 1
         assert response.data["unpurchased_items"][0]["name"] == "a"
@@ -565,3 +564,22 @@ class TestShoppingItem:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
         assert response.data[0]["name"] == shopping_item_form_this_list.name
+
+    def test_duplicate_item_on_list_returns_400(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list("abc", user)
+        ShoppingItem.objects.create(
+            name="a", purchased=False, shopping_list=shopping_list
+        )
+
+        client = create_authenticated_client(user)
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk])
+        data = {
+            "name": "a",
+            "purchased": False,
+        }
+        response = client.post(url, data, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

@@ -16,6 +16,12 @@ class ShoppingItemSerializer(serializers.ModelSerializer):
         validated_data["shopping_list_id"] = self.context["request"].parser_context[
             "kwargs"
         ]["pk"]
+
+        if ShoppingList.objects.get(
+            id=validated_data["shopping_list_id"]
+        ).shopping_items.filter(name=validated_data["name"], purchased=False):
+            raise serializers.ValidationError("There is already this item on the list")
+
         return super(ShoppingItemSerializer, self).create(validated_data)
 
 
