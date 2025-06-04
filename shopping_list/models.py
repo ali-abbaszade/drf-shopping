@@ -7,6 +7,7 @@ class ShoppingList(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     name = models.CharField(max_length=200)
     members = models.ManyToManyField("auth.User")
+    last_interaction = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name

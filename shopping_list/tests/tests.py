@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 
+from datetime import datetime, timedelta
+from unittest import mock
 import pytest
 
 from shopping_list.models import ShoppingList, ShoppingItem
@@ -266,6 +268,69 @@ class TestShoppingList:
 
         response.status_code == status.HTTP_200_OK
         assert len(response.data["unpurchased_items"]) == 2
+
+    def test_correct_order_shopping_lists(
+        self, create_user, create_authenticated_client
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+        url = reverse("all-shopping-lists")
+
+        old_time = datetime.now() - timedelta(days=1)
+        older_time = datetime.now() - timedelta(days=100)
+
+        with mock.patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = old_time
+            ShoppingList.objects.create(name="old").members.add(user)
+
+            mock_now.return_value = older_time
+            ShoppingList.objects.create(name="oldest").members.add(user)
+
+        ShoppingList.objects.create(name="new").members.add(user)
+
+        response = client.get(url)
+
+        assert response.data[0]["name"] == "new"
+        assert response.data[1]["name"] == "old"
+        assert response.data[2]["name"] == "oldest"
+
+    def test_shopping_list_order_change_when_item_marked_purchased(
+        self, create_user, create_authenticated_client
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+
+        more_recent_time = datetime.now() - timedelta(days=1)
+        older_time = datetime.now() - timedelta(days=20)
+
+        with mock.patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = older_time
+            older_list = ShoppingList.objects.create(name="older")
+            older_list.members.add(user)
+            shopping_item_on_older_list = ShoppingItem.objects.create(
+                name="milk", purchased=False, shopping_list=older_list
+            )
+
+            mock_now.return_value = more_recent_time
+            ShoppingList.objects.create(
+                name="recent", last_interaction=datetime.now() - timedelta(days=100)
+            ).members.add(user)
+
+        shopping_item_url = reverse(
+            "shopping-item-detail",
+            kwargs={"pk": older_list.pk, "item_pk": shopping_item_on_older_list.pk},
+        )
+        shopping_list_url = reverse("all-shopping-lists")
+
+        data = {
+            "purchased": True,
+        }
+        client.patch(shopping_item_url, data)
+
+        response = client.get(shopping_list_url)
+
+        assert response.data[1]["name"] == "recent"
+        assert response.data[0]["name"] == "older"
 
 
 @pytest.mark.django_db
