@@ -52,8 +52,9 @@ class TestShoppingList:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]["name"] == "abc"
+        print("CHECK", response.data)
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == "abc"
 
     def test_retrieve_single_shopping_list_returns_200(
         self, create_user, create_authenticated_client, create_shopping_list
@@ -290,9 +291,9 @@ class TestShoppingList:
 
         response = client.get(url)
 
-        assert response.data[0]["name"] == "new"
-        assert response.data[1]["name"] == "old"
-        assert response.data[2]["name"] == "oldest"
+        assert response.data["results"][0]["name"] == "new"
+        assert response.data["results"][1]["name"] == "old"
+        assert response.data["results"][2]["name"] == "oldest"
 
     def test_shopping_list_order_change_when_item_marked_purchased(
         self, create_user, create_authenticated_client
@@ -329,8 +330,8 @@ class TestShoppingList:
 
         response = client.get(shopping_list_url)
 
-        assert response.data[1]["name"] == "recent"
-        assert response.data[0]["name"] == "older"
+        assert response.data["results"][1]["name"] == "recent"
+        assert response.data["results"][0]["name"] == "older"
 
 
 @pytest.mark.django_db
@@ -589,9 +590,9 @@ class TestShoppingItem:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2
-        assert response.data[0]["name"] == shopping_item_1.name
-        assert response.data[1]["name"] == shopping_item_2.name
+        assert len(response.data["results"]) == 2
+        assert response.data["results"][0]["name"] == shopping_item_1.name
+        assert response.data["results"][1]["name"] == shopping_item_2.name
 
     def test_non_member_can_not_access_shopping_item_returns_403(
         self, create_user, create_authenticated_client, create_shopping_item
@@ -627,8 +628,8 @@ class TestShoppingItem:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]["name"] == shopping_item_form_this_list.name
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == shopping_item_form_this_list.name
 
     def test_duplicate_item_on_list_returns_400(
         self, create_user, create_authenticated_client, create_shopping_list
