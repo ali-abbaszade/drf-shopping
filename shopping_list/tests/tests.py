@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from datetime import datetime, timedelta
 from unittest import mock
@@ -335,6 +336,28 @@ class TestShoppingList:
 
         assert response.data["results"][1]["name"] == "recent"
         assert response.data["results"][0]["name"] == "older"
+
+    def test_call_with_token_authentication():
+        username = "admin"
+        password = "something"
+        User.objects.create_user(username=username, password=password)
+
+        client = APIClient()
+        token_url = reverse("api-token-auth")
+
+        data = {
+            "username": username,
+            "password": password,
+        }
+
+        token_response = client.post(token_url, data=data, format="json")
+        token = token_response.data["token"]
+
+        url = reverse("all-shopping-lists")
+        client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        response = client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
