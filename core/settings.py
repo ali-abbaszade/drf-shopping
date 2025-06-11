@@ -137,3 +137,5 @@ REST_FRAMEWORK = {
 
 # CORS headers only set in development
 CORS_ALLOW_ALL_ORIGINS = DEBUG
+
+AUTH_USER_MODEL = "shopping_list.User"

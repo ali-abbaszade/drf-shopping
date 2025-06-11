@@ -1,6 +1,7 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 
-from shopping_list.models import ShoppingItem, ShoppingList
+from shopping_list.models import ShoppingItem, ShoppingList, User
 
 
 @admin.register(ShoppingItem)
@@ -15,3 +16,6 @@ class ShoppingItemInline(admin.StackedInline):
 @admin.register(ShoppingList)
 class ShoppingListAdmin(admin.ModelAdmin):
     inlines = [ShoppingItemInline]
+
+
+admin.site.register(User, UserAdmin)

@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 
@@ -7,6 +7,9 @@ from unittest import mock
 import pytest
 
 from shopping_list.models import ShoppingList, ShoppingItem
+
+
+User = get_user_model()
 
 
 @pytest.mark.django_db
