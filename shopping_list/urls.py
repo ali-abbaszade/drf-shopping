@@ -18,6 +18,11 @@ urlpatterns = [
         name="shopping-list-detail",
     ),
     path(
+        "api/shopping-lists/<uuid:pk>/add-members/",
+        views.ShoppingListAddMembers.as_view(),
+        name="shopping-list-add-members",
+    ),
+    path(
         "api/shopping-lists/<uuid:pk>/shopping-items/",
         views.ListAddShoppingItem.as_view(),
         name="list-add-shopping-item",

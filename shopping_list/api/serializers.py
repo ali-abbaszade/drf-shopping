@@ -44,3 +44,16 @@ class ShoppingListSerializer(serializers.ModelSerializer):
             {"name": shopping_item.name}
             for shopping_item in obj.shopping_items.filter(purchased=False)[:3]
         ]
+
+
+class AddMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingList
+        fields = ["members"]
+
+    def update(self, instance, validated_data):
+        for member in validated_data["members"]:
+            instance.members.add(member)
+            instance.save()
+
+        return instance

@@ -1,7 +1,13 @@
 from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from shopping_list.models import ShoppingList, ShoppingItem
-from shopping_list.api.serializers import ShoppingListSerializer, ShoppingItemSerializer
+from shopping_list.api.serializers import (
+    ShoppingListSerializer,
+    ShoppingItemSerializer,
+    AddMemberSerializer,
+)
 from shopping_list.api.permissions import (
     ShoppingListMembersOnly,
     ShoppingItemShoppingListMembersOnly,
@@ -48,3 +54,15 @@ class ShoppingItemDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ShoppingItemSerializer
     permission_classes = [ShoppingItemShoppingListMembersOnly]
     lookup_url_kwarg = "item_pk"
+
+
+class ShoppingListAddMembers(APIView):
+    permission_classes = [ShoppingListMembersOnly]
+
+    def put(self, request, pk, format=None):
+        shopping_list = ShoppingList.objects.get(pk=pk)
+        serializer = AddMemberSerializer(shopping_list, data=request.data)
+        self.check_object_permissions(request, shopping_list)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
