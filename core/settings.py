@@ -137,6 +137,16 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 3,
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "shopping_list.api.throttling.MinuteRateThrottle",
+        "shopping_list.api.throttling.DailyRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10/hour",
+        "user_day": "10000/day",
+        "user_minute": "200/minute",
+    },
 }
 
 

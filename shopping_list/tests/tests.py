@@ -337,7 +337,7 @@ class TestShoppingList:
         assert response.data["results"][1]["name"] == "recent"
         assert response.data["results"][0]["name"] == "older"
 
-    def test_call_with_token_authentication():
+    def test_call_with_token_authentication(self):
         username = "admin"
         password = "something"
         User.objects.create_user(username=username, password=password)
