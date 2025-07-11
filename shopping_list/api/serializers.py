@@ -57,3 +57,16 @@ class AddMemberSerializer(serializers.ModelSerializer):
             instance.save()
 
         return instance
+
+
+class RemoveMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingList
+        fields = ["members"]
+
+    def update(self, instance, validated_data):
+        for member in validated_data["members"]:
+            instance.members.remove(member)
+            instance.save()
+
+        return instance

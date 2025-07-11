@@ -23,6 +23,11 @@ urlpatterns = [
         name="shopping-list-add-members",
     ),
     path(
+        "api/shopping-lists/<uuid:pk>/remove-members/",
+        views.ShoppingListRemoveMembers.as_view(),
+        name="shopping-list-remove-members",
+    ),
+    path(
         "api/shopping-lists/<uuid:pk>/shopping-items/",
         views.ListAddShoppingItem.as_view(),
         name="list-add-shopping-item",

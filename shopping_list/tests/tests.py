@@ -415,6 +415,59 @@ class TestShoppingList:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_remove_members_list_member(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        shopping_list = create_shopping_list("my list", user)
+        client = create_authenticated_client(user)
+
+        another_member = User.objects.create_user(
+            username="another_member", password="whocares"
+        )
+        third_member = User.objects.create_user(
+            username="third_member", password="whocares"
+        )
+
+        data = {"members": [another_member.id, third_member.id]}
+        url = reverse("shopping-list-remove-members", args=[shopping_list.pk])
+        response = client.put(url, data, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["members"]) == 1
+        assert another_member.id not in response.data["members"]
+        assert third_member.id not in response.data["members"]
+
+    def test_remove_members_not_list_member(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+
+        list_creator = User.objects.create_user(
+            username="list_creator", password="whocares"
+        )
+        shopping_list = create_shopping_list("new list", list_creator)
+
+        data = {"members": [user.id]}
+        url = reverse("shopping-list-remove-members", args=[shopping_list.pk])
+        response = client.put(url, data, format="json")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_remove_members_invalid_data(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+        shopping_list = create_shopping_list("new list", user)
+
+        data = {"members": [20, 21]}
+        url = reverse("shopping-list-remove-members", args=[shopping_list.pk])
+        response = client.put(url, data, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
 
 @pytest.mark.django_db
 class TestShoppingItem:

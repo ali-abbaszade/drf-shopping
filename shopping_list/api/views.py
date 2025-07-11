@@ -7,6 +7,7 @@ from shopping_list.api.serializers import (
     ShoppingListSerializer,
     ShoppingItemSerializer,
     AddMemberSerializer,
+    RemoveMemberSerializer,
 )
 from shopping_list.api.permissions import (
     ShoppingListMembersOnly,
@@ -62,6 +63,18 @@ class ShoppingListAddMembers(APIView):
     def put(self, request, pk, format=None):
         shopping_list = ShoppingList.objects.get(pk=pk)
         serializer = AddMemberSerializer(shopping_list, data=request.data)
+        self.check_object_permissions(request, shopping_list)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class ShoppingListRemoveMembers(APIView):
+    permission_classes = [ShoppingListMembersOnly]
+
+    def put(self, request, pk, format=None):
+        shopping_list = ShoppingList.objects.get(pk=pk)
+        serializer = RemoveMemberSerializer(shopping_list, data=request.data)
         self.check_object_permissions(request, shopping_list)
         serializer.is_valid(raise_exception=True)
         serializer.save()
