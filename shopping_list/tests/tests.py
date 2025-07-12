@@ -56,7 +56,6 @@ class TestShoppingList:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        print("CHECK", response.data)
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == "abc"
 
@@ -784,3 +783,39 @@ class TestShoppingItem:
         response = client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_search_returns_corresponding_shopping_item(
+        self, create_user, create_authenticated_client, create_shopping_item
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+
+        create_shopping_item("chocolate", user)
+        create_shopping_item("milk", user)
+
+        search_param = "?search=milk"
+        url = reverse("search_shopping-items") + search_param
+
+        response = client.get(url)
+
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == "milk"
+
+    def test_search_returns_only_users_results(
+        self, create_user, create_authenticated_client, create_shopping_item
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+        another_user = User.objects.create_user(
+            "SomeOtherUser", "someotheruser@email.com", "something"
+        )
+
+        create_shopping_item("milk", user)
+        create_shopping_item("milk", another_user)
+
+        search_param = "?search=milk"
+        url = reverse("search_shopping-items") + search_param
+
+        response = client.get(url)
+
+        assert len(response.data["results"]) == 1

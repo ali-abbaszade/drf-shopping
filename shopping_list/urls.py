@@ -37,4 +37,9 @@ urlpatterns = [
         views.ShoppingItemDetail.as_view(),
         name="shopping-item-detail",
     ),
+    path(
+        "api/search-shopping-items/",
+        views.SearchShoppingItems.as_view(),
+        name="search_shopping-items",
+    ),
 ]

@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -79,3 +79,16 @@ class ShoppingListRemoveMembers(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class SearchShoppingItems(generics.ListAPIView):
+    serializer_class = ShoppingItemSerializer
+
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
+
+    def get_queryset(self):
+        users_shopping_lists = ShoppingList.objects.filter(members=self.request.user)
+        queryset = ShoppingItem.objects.filter(shopping_list__in=users_shopping_lists)
+
+        return queryset
