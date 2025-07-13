@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
+    "drf_spectacular",
     "shopping_list",
 ]
 
@@ -147,8 +148,19 @@ REST_FRAMEWORK = {
         "user_day": "10000/day",
         "user_minute": "200/minute",
     },
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+# drf-spectacular config
+SPECTACULAR_SETTINGS = {
+    "TITLE": "My Awesome API",
+    "DESCRIPTION": "Multiple shopping lists to never forget anything anymore.",
+    "VERSION": "1.0.0",
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
+}
 
 # CORS headers only set in development
 CORS_ALLOW_ALL_ORIGINS = DEBUG

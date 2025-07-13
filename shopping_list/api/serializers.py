@@ -1,3 +1,4 @@
+from typing import List, TypedDict
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -31,6 +32,10 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ("id", "username")
 
 
+class UnpurchasedItem(TypedDict):
+    name: str
+
+
 class ShoppingListSerializer(serializers.ModelSerializer):
     members = UserSerializer(many=True, read_only=True)
     unpurchased_items = serializers.SerializerMethodField()
@@ -39,7 +44,7 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         model = ShoppingList
         fields = ("id", "name", "unpurchased_items", "members")
 
-    def get_unpurchased_items(self, obj):
+    def get_unpurchased_items(self, obj) -> List[UnpurchasedItem]:
         return [
             {"name": shopping_item.name}
             for shopping_item in obj.shopping_items.filter(purchased=False)[:3]

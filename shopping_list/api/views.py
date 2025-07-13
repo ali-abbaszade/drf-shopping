@@ -1,6 +1,7 @@
 from rest_framework import generics, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from shopping_list.models import ShoppingList, ShoppingItem
 from shopping_list.api.serializers import (
@@ -63,6 +64,7 @@ class ShoppingItemDetail(generics.RetrieveUpdateDestroyAPIView):
 class ShoppingListAddMembers(APIView):
     permission_classes = [ShoppingListMembersOnly]
 
+    @extend_schema(request=AddMemberSerializer, responses=AddMemberSerializer)
     def put(self, request, pk, format=None):
         shopping_list = ShoppingList.objects.get(pk=pk)
         serializer = AddMemberSerializer(shopping_list, data=request.data)
@@ -75,6 +77,7 @@ class ShoppingListAddMembers(APIView):
 class ShoppingListRemoveMembers(APIView):
     permission_classes = [ShoppingListMembersOnly]
 
+    @extend_schema(request=RemoveMemberSerializer, responses=RemoveMemberSerializer)
     def put(self, request, pk, format=None):
         shopping_list = ShoppingList.objects.get(pk=pk)
         serializer = RemoveMemberSerializer(shopping_list, data=request.data)
