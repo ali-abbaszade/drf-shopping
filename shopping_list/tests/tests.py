@@ -819,3 +819,120 @@ class TestShoppingItem:
         response = client.get(url)
 
         assert len(response.data["results"]) == 1
+
+    def test_order_items_names_ascending(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+
+        shopping_list = create_shopping_list("new list", user)
+        ShoppingItem.objects.create(
+            name="Bananas", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="Apples", purchased=False, shopping_list=shopping_list
+        )
+
+        order_param = "?ordering=name"
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk]) + order_param
+
+        response = client.get(url)
+
+        assert response.data["results"][0]["name"] == "Apples"
+        assert response.data["results"][1]["name"] == "Bananas"
+
+    def test_order_items_names_descending(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+
+        shopping_list = create_shopping_list("new list", user)
+        ShoppingItem.objects.create(
+            name="Bananas", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="Apples", purchased=False, shopping_list=shopping_list
+        )
+
+        order_param = "?ordering=-name"
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk]) + order_param
+
+        response = client.get(url)
+
+        assert response.data["results"][0]["name"] == "Bananas"
+        assert response.data["results"][1]["name"] == "Apples"
+
+    def test_order_shopping_items_unpurchased_first(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+        shopping_list = create_shopping_list("new list", user)
+
+        ShoppingItem.objects.create(
+            name="Apples", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="Bananas", purchased=True, shopping_list=shopping_list
+        )
+
+        order_param = "?ordering=purchased"
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk]) + order_param
+
+        response = client.get(url)
+
+        assert response.data["results"][0]["name"] == "Apples"
+        assert response.data["results"][1]["name"] == "Bananas"
+
+    def test_order_shopping_items_purchased_first(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+        shopping_list = create_shopping_list("new list", user)
+
+        ShoppingItem.objects.create(
+            name="Apples", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="Bananas", purchased=True, shopping_list=shopping_list
+        )
+
+        order_param = "?ordering=-purchased"
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk]) + order_param
+
+        response = client.get(url)
+
+        assert response.data["results"][0]["name"] == "Bananas"
+        assert response.data["results"][1]["name"] == "Apples"
+
+    def test_order_shopping_items_purchased_and_name(
+        self, create_user, create_authenticated_client, create_shopping_list
+    ):
+        user = create_user()
+        client = create_authenticated_client(user)
+        shopping_list = create_shopping_list("new list", user)
+
+        ShoppingItem.objects.create(
+            name="Apples", purchased=True, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="Bananas", purchased=False, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="Coconut", purchased=True, shopping_list=shopping_list
+        )
+        ShoppingItem.objects.create(
+            name="Dates", purchased=False, shopping_list=shopping_list
+        )
+
+        order_param = "?ordering=purchased,name"
+        url = reverse("list-add-shopping-item", args=[shopping_list.pk]) + order_param
+        response = client.get(url)
+
+        assert response.data["results"][0]["name"] == "Bananas"
+        assert response.data["results"][1]["name"] == "Dates"
+        assert response.data["results"][2]["name"] == "Apples"
+        assert response.data["results"][3]["name"] == "Coconut"

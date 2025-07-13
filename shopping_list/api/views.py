@@ -41,12 +41,15 @@ class ListAddShoppingItem(generics.ListCreateAPIView):
     serializer_class = ShoppingItemSerializer
     permission_classes = [AllShoppingItemsShoppingListMembersOnly]
     pagination_class = LargerResultsSetPagination
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ["name", "purchased"]
 
     def get_queryset(self):
         shopping_list_id = self.kwargs["pk"]
         queryset = ShoppingItem.objects.filter(
             shopping_list_id=shopping_list_id
         ).order_by("purchased")
+
         return queryset
 
 
